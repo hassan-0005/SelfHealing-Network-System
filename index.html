@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+    <!-- Real-time Stats -->
+    <div class="glass p-6 rounded-lg orange-glow text-center">
+        <p class="text-xs text-gray-500 uppercase">Download Speed</p>
+        <h2 id="download" class="text-4xl font-bold text-orange-500">0.00</h2>
+        <p class="text-xs">MBPS</p>
+    </div>
+    <div class="glass p-6 rounded-lg border border-gray-800 text-center">
+        <p class="text-xs text-gray-500 uppercase">Packet Loss</p>
+        <h2 id="loss" class="text-4xl font-bold text-red-600">0%</h2>
+    </div>
+    <div class="glass p-6 rounded-lg border border-gray-800 text-center">
+        <p class="text-xs text-gray-500 uppercase">Health Score</p>
+        <h2 id="health" class="text-4xl font-bold text-green-500">100</h2>
+    </div>
+    <div class="glass p-6 rounded-lg border border-gray-800 text-center">
+        <p class="text-xs text-gray-500 uppercase">CPU Usage</p>
+        <h2 id="cpu" class="text-4xl font-bold text-orange-300">0%</h2>
+    </div>
+</div>
+
+<!-- Graph Section -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <div class="glass p-6 rounded-xl border border-orange-900/30">
+        <h3 class="text-orange-500 mb-4 text-sm tracking-widest uppercase font-bold">Network Traffic Flow</h3>
+        <canvas id="trafficChart" height="200"></canvas>
+    </div>
+    <div class="glass p-6 rounded-xl border border-orange-900/30">
+        <h3 class="text-orange-500 mb-4 text-sm tracking-widest uppercase font-bold">AI Engine Activity</h3>
+        <div id="ai-logs" class="space-y-2 text-xs h-48 overflow-y-auto font-mono">
+            <p class="text-green-500">> Initializing AI Neural Monitor...</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    const ctx = document.getElementById('trafficChart').getContext('2d');
+    const chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Download Speed',
+                borderColor: '#ff6600',
+                backgroundColor: 'rgba(255,102,0,0.1)',
+                data: [],
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: { scales: { y: { beginAtZero: true, grid: { color: '#222' } } } }
+    });
+
+    socket.on('network_update', function(data) {
+        document.getElementById('download').innerText = data.download;
+        document.getElementById('loss').innerText = data.packet_loss + '%';
+        document.getElementById('health').innerText = data.health;
+        document.getElementById('cpu').innerText = data.cpu + '%';
+
+        // Update Chart
+        const time = new Date().toLocaleTimeString();
+        chart.data.labels.push(time);
+        chart.data.datasets[0].data.push(data.download);
+        if(chart.data.labels.length > 15) { chart.data.labels.shift(); chart.data.datasets[0].data.shift(); }
+        chart.update('none');
+
+        // Update AI Logs
+        const logDiv = document.getElementById('ai-logs');
+        if (data.ai_msg.includes('⚠️') || data.ai_msg.includes('🚀')) {
+            const p = document.createElement('p');
+            p.className = "text-orange-400 animate-pulse";
+            p.innerHTML = `> [${time}] ${data.ai_msg}`;
+            logDiv.prepend(p);
+        }
+    });
+</script>
+{% endblock %}
