@@ -1,5 +1,4 @@
-flask
-flask-socketio
-psutil
-scapy
+streamlit
 pandas
+psutil
+plotly
